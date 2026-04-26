@@ -1,0 +1,4 @@
+Characters data:
+- Make a base Character data asset
+- Make a base for speakers : child of the base + DialogueSpeakerData
+- Use these to create data assets
