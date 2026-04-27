@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "DataAssets/AJ_Dialogue.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "LatentActions.h"
+#include "Widgets/AJ_DialogueWidget.h"
 
 #include "AJ_DialogueSystemUtilities.generated.h"
 
@@ -16,5 +18,5 @@ class AJ_DIALOGUESYSTEM_API UAJ_DialogueSystemUtilities : public UBlueprintFunct
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "AJ_DialogueSystem")
-	static void PlayDialogue(UObject* WorldContextObject, UAJ_Dialogue* Dialogue);
+	static UAJ_DialogueWidget* PlayDialogue(UObject* WorldContextObject, UAJ_Dialogue* Dialogue);
 };

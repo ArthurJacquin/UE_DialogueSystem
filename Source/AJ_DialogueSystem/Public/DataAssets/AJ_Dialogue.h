@@ -31,6 +31,9 @@ class AJ_DIALOGUESYSTEM_API UAJ_Dialogue : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
+	/**
+	 * The entries for this dialogue
+	 */
 	UPROPERTY(EditAnywhere)
 	TArray<FAJ_DialogueEntry> DialogueEntries;
 };

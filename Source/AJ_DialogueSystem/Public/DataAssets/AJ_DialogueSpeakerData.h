@@ -15,12 +15,12 @@ class AJ_DIALOGUESYSTEM_API UAJ_DialogueSpeakerData : public UPrimaryDataAsset
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, Category = "Dialogue Speaker")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue Speaker")
 	FText Name;
 
-	UPROPERTY(EditAnywhere, Category = "Dialogue Speaker")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue Speaker")
 	FLinearColor Color;
 
-	UPROPERTY(EditAnywhere, Category = "Dialogue Speaker")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue Speaker")
 	TSoftObjectPtr<UTexture2D> BaseImage;
 };
