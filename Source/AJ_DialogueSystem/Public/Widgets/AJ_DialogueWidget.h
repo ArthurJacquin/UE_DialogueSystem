@@ -14,8 +14,6 @@ struct FAJ_DialogueEntry;
 
 DECLARE_LOG_CATEGORY_EXTERN(AJ_DialogueWidgetLog, Log, All);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDialogueCompletedDelegate);
-
 USTRUCT(BlueprintType)
 struct FAJ_SpeakerWidgets
 {
@@ -84,9 +82,14 @@ public:
 	FLinearColor DisableColor;
 
 	/**
-	 * Called when the end of the dialogue have been reached
+	 * Is this dialogue completed
 	 */
-	UPROPERTY(BlueprintAssignable)
+	bool bIsDialogueCompleted;
+
+	/**
+	 * Called when the end of the dialogue is reached
+	 */
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDialogueCompletedDelegate);
 	FOnDialogueCompletedDelegate OnDialogueCompleted;
 
 protected:
@@ -112,7 +115,7 @@ private:
 	/**
 	 * Close the dialogue
 	 */
-	void ExitDialogue(bool bCallCompletionEvent);
+	void ExitDialogue();
 
 	/**
 	 * Prepare the widget to display the given entry

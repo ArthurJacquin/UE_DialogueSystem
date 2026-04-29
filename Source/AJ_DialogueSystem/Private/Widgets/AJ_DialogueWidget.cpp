@@ -15,7 +15,7 @@ void UAJ_DialogueWidget::PlayDialogue(UAJ_Dialogue* const InDialogue)
 	if (Dialogue->DialogueEntries.IsEmpty())
 	{
 		UE_LOG(AJ_DialogueWidgetLog, Error, TEXT("No entry found for dialogue. Removing widget."));
-		ExitDialogue(false);
+		ExitDialogue();
 		return;
 	}
 
@@ -95,21 +95,17 @@ void UAJ_DialogueWidget::ContinueDialogue()
 
 	if (CurrentEntryId >= Dialogue->DialogueEntries.Num())
 	{
-		ExitDialogue(true);
+		ExitDialogue();
 		return;
 	}
 
 	SetupDialogueEntry(Dialogue->DialogueEntries[CurrentEntryId]);
 }
 
-void UAJ_DialogueWidget::ExitDialogue(bool bCallCompletionEvent)
+void UAJ_DialogueWidget::ExitDialogue()
 {
-	if (bCallCompletionEvent)
-	{
-		OnDialogueCompleted.Broadcast();
-	}
-
-	RemoveFromParent();
+	bIsDialogueCompleted = true;
+	OnDialogueCompleted.Broadcast();
 }
 
 void UAJ_DialogueWidget::SetupDialogueEntry(const FAJ_DialogueEntry& Entry)
