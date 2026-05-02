@@ -90,6 +90,14 @@ public:
 	virtual void OnSpeakerStateChanged_Implementation(bool bIsSpeaking, const FAJ_SpeakerWidgets& InSpeakerWidgets, const UAJ_DialogueSpeakerData* SpeakerData);
 
 	/**
+	 * Called when a letter is added in the script line text
+	 * Implement in BP
+	 */
+	UFUNCTION(BlueprintNativeEvent)
+	void OnScriptLineLetterAdded(const FString& Letter);
+	virtual void OnScriptLineLetterAdded_Implementation(const FString& Letter) {}
+	
+	/**
 	 * The script line being spoken
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))

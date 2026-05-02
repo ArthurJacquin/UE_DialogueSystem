@@ -244,6 +244,10 @@ void UAJ_DialogueWidget::UpdateTextAnimation(const float& DeltaTime)
 			);
 		ScriptLineText->SetText(TextAnimationData.CurrentDisplayedText);
 		
+		// BP event for audio or any other effect happening on each letter
+		const FString LetterAdded = TextAnimationData.CurrentDisplayedText.ToString().RightChop(TextAnimationData.CurrentCharacterId - 1);
+		OnScriptLineLetterAdded(LetterAdded);
+		
 		if (TextAnimationData.CurrentCharacterId == TextAnimationData.FinalScriptLine.Len())
 		{
 			StopAnimations();
