@@ -16,10 +16,13 @@ struct FAJ_DialogueEntry
 
 public:
 	UPROPERTY(EditAnywhere)
-	UAJ_DialogueSpeakerData* SpeakerData;
+	UAJ_DialogueSpeakerData* SpeakerData = nullptr;
+	
+	UPROPERTY(EditAnywhere)
+	EAJ_DialogueEmotion Emotion = EAJ_DialogueEmotion::Neutral;
 
 	UPROPERTY(EditAnywhere)
-	FText ScriptLine;
+	FText ScriptLine = FText();
 };
 
 /**

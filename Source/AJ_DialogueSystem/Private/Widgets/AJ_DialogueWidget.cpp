@@ -3,7 +3,6 @@
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "DataAssets/AJ_Dialogue.h"
 
 DEFINE_LOG_CATEGORY(AJ_DialogueWidgetLog);
 
@@ -22,6 +21,8 @@ void UAJ_DialogueWidget::PlayDialogue(UAJ_Dialogue* const InDialogue)
 	//Setup general data
 	CacheDialogueData();
 	SetupSpeakersWidgets();
+	
+	StateImage->SetBrushFromTexture(GoToNextEntryImage);
 
 	// Setup first dialogue entry
 	SetupDialogueEntry(Dialogue->DialogueEntries[0]);
@@ -45,6 +46,16 @@ void UAJ_DialogueWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	ContinueButton->OnClicked.AddDynamic(this, &UAJ_DialogueWidget::ContinueDialogue);
+}
+
+void UAJ_DialogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	
+	if (bTextAnimInProgress)
+	{
+		UpdateTextAnimation(InDeltaTime);
+	}
 }
 
 void UAJ_DialogueWidget::CacheDialogueData()
@@ -84,22 +95,42 @@ void UAJ_DialogueWidget::SetupSpeakersWidgets()
 
 		if (UImage* SpeakerImage = SpeakerWidgets[i].SpeakerImage)
 		{
-			SpeakerImage->SetBrushFromSoftTexture(Speaker->BaseImage);
+			if (!Speaker->ImagesPerEmotion.Contains(EAJ_DialogueEmotion::Neutral))
+			{
+				UE_LOG(AJ_DialogueWidgetLog, Error, TEXT("No neutral emotion found for speaker %s"), *Speaker->Name.ToString());
+			}
+			else
+			{
+				// Set default image to the neutral one
+				if (Speaker->ImagesPerEmotion.Contains(EAJ_DialogueEmotion::Neutral))
+				{
+					UTexture* const DefaultImage = Speaker->ImagesPerEmotion[EAJ_DialogueEmotion::Neutral].DefaultImage.LoadSynchronous();
+					SpeakerImage->GetDynamicMaterial()->SetTextureParameterValue(TEXT("DefaultTexture"), DefaultImage);
+				}
+			}
 		}
 	}
 }
 
 void UAJ_DialogueWidget::ContinueDialogue()
 {
-	++CurrentEntryId;
-
-	if (CurrentEntryId >= Dialogue->DialogueEntries.Num())
+	// If we have an anim running, finish it
+	if (bTextAnimInProgress)
 	{
-		ExitDialogue();
-		return;
+		StopAnimations();
 	}
+	else // Go to next entry
+	{
+		++CurrentEntryId;
 
-	SetupDialogueEntry(Dialogue->DialogueEntries[CurrentEntryId]);
+		if (CurrentEntryId >= Dialogue->DialogueEntries.Num())
+		{
+			ExitDialogue();
+			return;
+		}
+
+		SetupDialogueEntry(Dialogue->DialogueEntries[CurrentEntryId]);
+	}
 }
 
 void UAJ_DialogueWidget::ExitDialogue()
@@ -112,13 +143,33 @@ void UAJ_DialogueWidget::SetupDialogueEntry(const FAJ_DialogueEntry& Entry)
 {
 	UAJ_DialogueSpeakerData* const SpeakerData = Entry.SpeakerData;
 	int32 SpeakerId = GetSpeakerId(SpeakerData);
+	
+	// Toggle widgets for the speaker
+	SetSpeaker(SpeakerId, Entry.Emotion);
 
-	SetSpeaker(SpeakerId);
-
-	ScriptLineText->SetText(Entry.ScriptLine);
+	if (bUseAnimations)
+	{
+		// Init animation data
+		TextAnimationData = FAJ_TextAnimationData();
+		TextAnimationData.SpeakerId = SpeakerId;
+		TextAnimationData.DialogueEntry = Entry;
+		TextAnimationData.FinalScriptLine = Entry.ScriptLine.ToString();
+		
+		StartAnimations();
+	}
+	else
+	{
+		// Set speaker emotion default image
+		const FAJ_SpeakerWidgets& Widgets = SpeakerWidgets[SpeakerId];
+		UTexture* const Image = SpeakerData->ImagesPerEmotion[Entry.Emotion].DefaultImage.LoadSynchronous();
+		Widgets.SpeakerImage->GetDynamicMaterial()->SetTextureParameterValue(TEXT("DefaultTexture"), Image);
+		
+		// Set script line
+		ScriptLineText->SetText(Entry.ScriptLine);
+	}
 }
 
-void UAJ_DialogueWidget::SetSpeaker(const int32& SpeakerId)
+void UAJ_DialogueWidget::SetSpeaker(const int32& SpeakerId, const EAJ_DialogueEmotion& Emotion)
 {
 	for (int32 i = 0; i < SpeakerWidgets.Num(); ++i)
 	{
@@ -131,7 +182,7 @@ void UAJ_DialogueWidget::SetSpeaker(const int32& SpeakerId)
 			Widgets.SpeakerImage->SetVisibility(ESlateVisibility::Collapsed);
 			continue;
 		}
-
+		
 		// Update speakers in this dialogue entry
 		OnSpeakerStateChanged(i == SpeakerId, Widgets, Speakers[i]);
 	}
@@ -142,4 +193,62 @@ int32 UAJ_DialogueWidget::GetSpeakerId(UAJ_DialogueSpeakerData* const InSpeakerD
 	int32 Id = -1;
 	Speakers.Find(InSpeakerData, Id);
 	return Id;
+}
+
+void UAJ_DialogueWidget::StartAnimations()
+{
+	const FAJ_SpeakerWidgets& Widgets = SpeakerWidgets[TextAnimationData.SpeakerId];
+	const FAJ_DialogueEntry* const Entry = &TextAnimationData.DialogueEntry;
+	if (bEnableAnimatedText)
+	{
+		ScriptLineText->SetText(FText());
+		StateImage->SetBrushFromTexture(FastForwardImage);
+		bTextAnimInProgress = true;
+	}
+	
+	if (bEnableTalkingAnimations)
+	{
+		UMaterialInstanceDynamic* const ImageMaterial = Widgets.SpeakerImage->GetDynamicMaterial();
+		UTexture* const Flipbook = Entry->SpeakerData->ImagesPerEmotion[Entry->Emotion].TalkingFlipbook.LoadSynchronous();
+		ImageMaterial->SetTextureParameterValue(TEXT("Flipbook"), Flipbook);
+		ImageMaterial->SetScalarParameterValue(TEXT("IsSpeaking"), true);
+	}
+}
+
+void UAJ_DialogueWidget::StopAnimations()
+{
+	if (bEnableAnimatedText)
+	{
+		ScriptLineText->SetText(FText::FromString(TextAnimationData.FinalScriptLine));
+		StateImage->SetBrushFromTexture(GoToNextEntryImage);
+		bTextAnimInProgress = false;
+	}
+	
+	if (bEnableTalkingAnimations)
+	{
+		const FAJ_SpeakerWidgets& Widgets = SpeakerWidgets[TextAnimationData.SpeakerId];
+		UMaterialInstanceDynamic* const ImageMaterial = Widgets.SpeakerImage->GetDynamicMaterial();
+		ImageMaterial->SetScalarParameterValue(TEXT("IsSpeaking"), false);
+	}
+}
+
+void UAJ_DialogueWidget::UpdateTextAnimation(const float& DeltaTime)
+{
+	TextAnimationData.CurrentTextAnimationTime += DeltaTime;
+	if (TextAnimationData.CurrentTextAnimationTime > TimeBetweenCharacters)
+	{
+		++TextAnimationData.CurrentCharacterId;
+		
+		TextAnimationData.CurrentDisplayedText = FText::FromString(
+			TextAnimationData.FinalScriptLine.LeftChop(TextAnimationData.FinalScriptLine.Len() - TextAnimationData.CurrentCharacterId)
+			);
+		ScriptLineText->SetText(TextAnimationData.CurrentDisplayedText);
+		
+		if (TextAnimationData.CurrentCharacterId == TextAnimationData.FinalScriptLine.Len())
+		{
+			StopAnimations();
+		}
+		
+		TextAnimationData.CurrentTextAnimationTime = 0;
+	}
 }

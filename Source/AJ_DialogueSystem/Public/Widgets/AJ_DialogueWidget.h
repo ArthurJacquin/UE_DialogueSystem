@@ -2,15 +2,14 @@
 
 #include "Blueprint/UserWidget.h"
 #include "CoreMinimal.h"
+#include "AJ_DialogueSystem/Public/DataAssets/AJ_DialogueSpeakerData.h"
+#include "DataAssets/AJ_Dialogue.h"
 
 #include "AJ_DialogueWidget.generated.h"
 
-class UAJ_Dialogue;
-class UAJ_DialogueSpeakerData;
 class UButton;
 class UImage;
 class UTextBlock;
-struct FAJ_DialogueEntry;
 
 DECLARE_LOG_CATEGORY_EXTERN(AJ_DialogueWidgetLog, Log, All);
 
@@ -21,10 +20,44 @@ struct FAJ_SpeakerWidgets
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UTextBlock* SpeakerNameText;
+	UTextBlock* SpeakerNameText = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UImage* SpeakerImage;
+	UImage* SpeakerImage = nullptr;
+};
+
+struct FAJ_TextAnimationData
+{
+public:
+	/**
+	 * Id of the speaker
+	 */
+	int32 SpeakerId = -1;
+	
+	/**
+	 * The current dialogue entry
+	 */
+	FAJ_DialogueEntry DialogueEntry = FAJ_DialogueEntry();
+	
+	/**
+	 * Final script line after animation
+	 */
+	FString FinalScriptLine = FString();
+
+	/**
+	 * Current duration of the text animation
+	 */
+	float CurrentTextAnimationTime = 0.0f;
+
+	/**
+	 * How many characters are displayed
+	 */
+	int32 CurrentCharacterId = 0;
+
+	/**
+	 * Text to be displayed in the script line widget
+	 */
+	FText CurrentDisplayedText = FText::GetEmpty();
 };
 
 /**
@@ -67,6 +100,12 @@ public:
 	 */
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	UButton* ContinueButton;
+	
+	/**
+	 * Image showing whether a click will go to the next entry or fast forward the animation
+	 */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	UImage* StateImage;
 
 	/**
 	 * List of widgets used for each speaker
@@ -75,12 +114,45 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category="AJ_DialogueSystem")
 	TArray<FAJ_SpeakerWidgets> SpeakerWidgets;
 
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem|Animations")
+	bool bUseAnimations = false;
+	
+	/**
+	 * Whether we should animate the script line or not
+	 */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations"), Category = "AJ_DialogueSystem|Animations")
+	bool bEnableAnimatedText = false;
+
+	/**
+	 * Whether we should use speakers emotions or not
+	 */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations"), Category = "AJ_DialogueSystem|Animations")
+	bool bEnableTalkingAnimations = false;
+
+	/**
+	 * Delay between characters spawn for the text animation, AKA animation speed
+	 */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations&&bEnableAnimatedText", Units="s"), Category = "AJ_DialogueSystem|Animations")
+	float TimeBetweenCharacters = 0.1f;
+	
+	/**
+	 * Image to show when a click will go to the next entry
+	 */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations&&bEnableAnimatedText"), Category = "AJ_DialogueSystem")
+	UTexture2D* FastForwardImage;
+	
 	/**
 	 * Color applied on a speaker that is not talking
 	 */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem")
 	FLinearColor DisableColor;
 
+	/**
+	 * Image to show when a click will go to the next entry
+	 */
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem")
+	UTexture2D* GoToNextEntryImage;
+	
 	/**
 	 * Is this dialogue completed
 	 */
@@ -94,6 +166,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
 	/**
@@ -126,13 +199,28 @@ private:
 	 * Set who is talking in the dialog
 	 * Enable/Disable widgets accordingly
 	 */
-	void SetSpeaker(const int32& NewSpeakerId);
+	void SetSpeaker(const int32& NewSpeakerId, const EAJ_DialogueEmotion& Emotion);
 
 	/**
 	 * Get the id of the given speaker into the dialogue (0 or 1)
 	 */
 	int32 GetSpeakerId(UAJ_DialogueSpeakerData* const InSpeakerData) const;
 
+	/**
+	 * Start the animation of the script line + character image animation
+	 */
+	void StartAnimations();
+	
+	/**
+	 * Start the animation of the script line + character image animation
+	 */
+	void StopAnimations();
+
+	/**
+	 * Update the script line text during animation
+	 */
+	void UpdateTextAnimation(const float& DeltaTime);
+	
 	/**
 	 * The dialogue being played
 	 */
@@ -147,4 +235,14 @@ private:
 	 * List of speakers for this dialogue
 	 */
 	TArray<UAJ_DialogueSpeakerData*> Speakers;
+
+	/**
+	 * Is a text animation currently in progress
+	 */
+	bool bTextAnimInProgress = false;
+
+	/**
+	 * Data for the current text animation
+	 */
+	FAJ_TextAnimationData TextAnimationData;
 };
