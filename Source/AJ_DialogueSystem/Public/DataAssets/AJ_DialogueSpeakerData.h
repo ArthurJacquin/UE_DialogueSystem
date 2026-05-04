@@ -45,4 +45,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue Speaker")
 	TMap<EAJ_DialogueEmotion, FAJ_SpeakerEmotionTextures> ImagesPerEmotion;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dialogue Speaker|Audio")
+	bool bUsePerLetterAudio = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(EditCondition="!bUsePerLetterAudio", EditConditionHides), Category = "Dialogue Speaker|Audio")
+	TObjectPtr<USoundWave> SpeakingAudio;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(EditCondition="bUsePerLetterAudio", EditConditionHides), Category = "Dialogue Speaker|Audio")
+	float VoicePitch = 1.0f;
 };

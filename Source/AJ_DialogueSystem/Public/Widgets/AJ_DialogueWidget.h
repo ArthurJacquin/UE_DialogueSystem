@@ -7,6 +7,7 @@
 
 #include "AJ_DialogueWidget.generated.h"
 
+class AAmbientSound;
 class UButton;
 class UImage;
 class UTextBlock;
@@ -75,6 +76,12 @@ public:
 	 **/
 	void PlayDialogue(UAJ_Dialogue* const InDialogue);
 
+	UFUNCTION(BlueprintCallable, Category="AJ_DialogueSystem|Audio")
+	void PlayUISound(USoundWave* const Sound, float Pitch);
+	
+	UFUNCTION(BlueprintCallable, Category="AJ_DialogueSystem|Audio")
+	void StopUISound();
+	
 	/**
 	 * Assign the widgets to their respective speakers in SpeakerWidgets, the order matters.
 	 */
@@ -94,8 +101,15 @@ public:
 	 * Implement in BP
 	 */
 	UFUNCTION(BlueprintNativeEvent)
-	void OnScriptLineLetterAdded(const FString& Letter);
-	virtual void OnScriptLineLetterAdded_Implementation(const FString& Letter) {}
+	void OnScriptLineLetterAdded(const FString& Letter, const UAJ_DialogueSpeakerData* const SpeakerData);
+	virtual void OnScriptLineLetterAdded_Implementation(const FString& Letter, const UAJ_DialogueSpeakerData* const SpeakerData) {}
+
+	/**
+	 * Called when a speaker is done speaking
+	 */
+	UFUNCTION(BlueprintNativeEvent)
+	void OnSpeakerFinishSpeach();
+	void OnSpeakerFinishSpeach_Implementation(){}
 	
 	/**
 	 * The script line being spoken
@@ -171,6 +185,12 @@ public:
 	 */
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDialogueCompletedDelegate);
 	FOnDialogueCompletedDelegate OnDialogueCompleted;
+
+	/**
+	 * Audio actor used to play any of the audio for that widget
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "AJ_DialogueSystem|Audio")
+	TObjectPtr<AAmbientSound> AmbientSound;
 
 protected:
 	virtual void NativeConstruct() override;

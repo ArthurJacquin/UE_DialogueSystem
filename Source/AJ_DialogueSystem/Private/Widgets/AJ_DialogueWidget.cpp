@@ -1,8 +1,10 @@
 #include "Widgets/AJ_DialogueWidget.h"
 
+#include "Components/AudioComponent.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Sound/AmbientSound.h"
 
 DEFINE_LOG_CATEGORY(AJ_DialogueWidgetLog);
 
@@ -28,6 +30,30 @@ void UAJ_DialogueWidget::PlayDialogue(UAJ_Dialogue* const InDialogue)
 	SetupDialogueEntry(Dialogue->DialogueEntries[0]);
 }
 
+void UAJ_DialogueWidget::PlayUISound(USoundWave* const Sound, float Pitch)
+{
+	if (!IsValid(AmbientSound))
+	{
+		UE_LOG(AJ_DialogueWidgetLog, Error, TEXT("Failed to play sound, AmbientSound actor not valid."));
+		return;
+	}
+	
+	AmbientSound->GetAudioComponent()->SetSound(Sound);
+	AmbientSound->GetAudioComponent()->SetPitchMultiplier(Pitch);
+	AmbientSound->GetAudioComponent()->Play();
+}
+
+void UAJ_DialogueWidget::StopUISound()
+{
+	if (!IsValid(AmbientSound))
+	{
+		UE_LOG(AJ_DialogueWidgetLog, Error, TEXT("Failed to stop sound, AmbientSound actor not valid."));
+		return;
+	}
+	
+	AmbientSound->GetAudioComponent()->Stop();
+}
+
 void UAJ_DialogueWidget::OnSpeakerStateChanged_Implementation(bool bIsSpeaking, const FAJ_SpeakerWidgets& InSpeakerWidgets, const UAJ_DialogueSpeakerData* SpeakerData)
 {
 	if (UTextBlock* NameText = InSpeakerWidgets.SpeakerNameText)
@@ -46,6 +72,11 @@ void UAJ_DialogueWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	ContinueButton->OnClicked.AddDynamic(this, &UAJ_DialogueWidget::ContinueDialogue);
+	
+	if (UWorld* World = GetWorld())
+	{
+		AmbientSound = World->SpawnActor<AAmbientSound>();
+	}
 }
 
 void UAJ_DialogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -230,6 +261,8 @@ void UAJ_DialogueWidget::StopAnimations()
 		UMaterialInstanceDynamic* const ImageMaterial = Widgets.SpeakerImage->GetDynamicMaterial();
 		ImageMaterial->SetScalarParameterValue(TEXT("IsSpeaking"), false);
 	}
+	
+	OnSpeakerFinishSpeach();
 }
 
 void UAJ_DialogueWidget::UpdateTextAnimation(const float& DeltaTime)
@@ -246,7 +279,7 @@ void UAJ_DialogueWidget::UpdateTextAnimation(const float& DeltaTime)
 		
 		// BP event for audio or any other effect happening on each letter
 		const FString LetterAdded = TextAnimationData.CurrentDisplayedText.ToString().RightChop(TextAnimationData.CurrentCharacterId - 1);
-		OnScriptLineLetterAdded(LetterAdded);
+		OnScriptLineLetterAdded(LetterAdded, TextAnimationData.DialogueEntry.SpeakerData);
 		
 		if (TextAnimationData.CurrentCharacterId == TextAnimationData.FinalScriptLine.Len())
 		{
