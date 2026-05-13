@@ -136,6 +136,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category="AJ_DialogueSystem")
 	TArray<FAJ_SpeakerWidgets> SpeakerWidgets;
 
+	/*
+	 * Are we using any default animation (Text, speach)
+	 */
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem|Animations")
 	bool bUseAnimations = false;
 	
@@ -160,19 +163,13 @@ public:
 	/**
 	 * Image to show when a click will go to the next entry
 	 */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations&&bEnableAnimatedText"), Category = "AJ_DialogueSystem")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta=(EditConditionHides, EditCondition="bUseAnimations&&bEnableAnimatedText"), Category = "AJ_DialogueSystem|Config")
 	UTexture2D* FastForwardImage;
-	
-	/**
-	 * Color applied on a speaker that is not talking
-	 */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem")
-	FLinearColor DisableColor;
 
 	/**
 	 * Image to show when a click will go to the next entry
 	 */
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem")
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "AJ_DialogueSystem|Config")
 	UTexture2D* GoToNextEntryImage;
 	
 	/**

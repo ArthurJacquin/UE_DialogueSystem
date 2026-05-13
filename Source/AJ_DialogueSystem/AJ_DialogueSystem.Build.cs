@@ -18,6 +18,7 @@ public class AJ_DialogueSystem : ModuleRules
 				"SlateCore",
 				"UMG",
 				"UnrealEd",
+				"DeveloperSettings",
 			}
 			);
 	}

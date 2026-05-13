@@ -1,15 +1,17 @@
 #include "Utilities/AJ_DialogueSystemUtilities.h"
 
+#include "Settings/AJ_DialogueSystemSettings.h"
+
 void UAJ_DialogueSystemUtilities::PlayDialogue(UObject* WorldContext, FLatentActionInfo LatentInfo, UAJ_Dialogue* Dialogue)
 {
-	UClass* WidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Script/UMGEditor.WidgetBlueprint'/AJ_DialogueSystem/Widgets/WBP_Dialogue_Main.WBP_Dialogue_Main_C'"));
-	if (WidgetClass == nullptr)
+	const UAJ_DialogueSystemSettings* const Settings = GetDefault<UAJ_DialogueSystemSettings>();
+	if (!IsValid(Settings) || Settings->DialogueWidgetClass == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Failed to play dialogue. Failed to load widget class."));
 		return;
 	}
 
-	if (UAJ_DialogueWidget* Widget = CreateWidget<UAJ_DialogueWidget>(WorldContext->GetWorld(), WidgetClass))
+	if (UAJ_DialogueWidget* Widget = CreateWidget<UAJ_DialogueWidget>(WorldContext->GetWorld(), Settings->DialogueWidgetClass))
 	{
 		Widget->AddToViewport();
 		Widget->PlayDialogue(Dialogue);
